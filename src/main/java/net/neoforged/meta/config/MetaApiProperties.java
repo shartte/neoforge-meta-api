@@ -5,6 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import java.io.File;
+import java.net.URI;
 
 @ConfigurationProperties("meta-api")
 @Validated
@@ -14,12 +15,23 @@ public class MetaApiProperties {
 
     private PollingJobProperties minecraftMetadataPolling = new PollingJobProperties();
 
+    @NotNull
+    private URI minecraftLauncherMetaUrl;
+
     public File getDataDirectory() {
         return dataDirectory;
     }
 
     public void setDataDirectory(File dataDirectory) {
         this.dataDirectory = dataDirectory;
+    }
+
+    public URI getMinecraftLauncherMetaUrl() {
+        return minecraftLauncherMetaUrl;
+    }
+
+    public void setMinecraftLauncherMetaUrl(URI minecraftLauncherMetaUrl) {
+        this.minecraftLauncherMetaUrl = minecraftLauncherMetaUrl;
     }
 
     public PollingJobProperties getMinecraftMetadataPolling() {

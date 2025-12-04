@@ -1,5 +1,6 @@
 package net.neoforged.meta.jobs;
 
+import net.neoforged.meta.config.MetaApiProperties;
 import net.neoforged.meta.db.MinecraftVersion;
 import net.neoforged.meta.db.MinecraftVersionDao;
 import net.neoforged.meta.db.MinecraftVersionManifest;
@@ -17,16 +18,14 @@ public class MinecraftMetadataPollingJob implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MinecraftMetadataPollingJob.class);
 
-    private static final String MINECRAFT_VERSION_MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
-
     private final RestClient restClient;
 
     private final MinecraftVersionDao minecraftVersionDao;
 
-    public MinecraftMetadataPollingJob(MinecraftVersionDao minecraftVersionDao) {
+    public MinecraftMetadataPollingJob(MinecraftVersionDao minecraftVersionDao, MetaApiProperties apiProperties) {
         this.minecraftVersionDao = minecraftVersionDao;
         this.restClient = RestClient.builder()
-                .baseUrl(MINECRAFT_VERSION_MANIFEST)
+                .baseUrl(apiProperties.getMinecraftLauncherMetaUrl())
                 .build();
     }
 

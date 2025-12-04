@@ -1,8 +1,9 @@
 meta-api:
   data-directory: ${DATA_DIR:./data}
-  polling:
+  minecraft-metadata-polling:
     enabled: true
     cron: "0 */5 * * * *"  # Every 5 minutes
+  minecraft-launcher-meta-url: https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
 
 spring:
   application:
