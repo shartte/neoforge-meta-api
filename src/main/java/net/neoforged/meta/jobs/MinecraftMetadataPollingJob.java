@@ -1,6 +1,5 @@
 package net.neoforged.meta.jobs;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import net.neoforged.meta.db.MinecraftVersion;
 import net.neoforged.meta.db.MinecraftVersionDao;
 import net.neoforged.meta.db.MinecraftVersionManifest;
@@ -24,7 +23,7 @@ public class MinecraftMetadataPollingJob implements Runnable {
 
     private final MinecraftVersionDao minecraftVersionDao;
 
-    public MinecraftMetadataPollingJob(MinecraftVersionDao minecraftVersionDao, MeterRegistry meterRegistry) {
+    public MinecraftMetadataPollingJob(MinecraftVersionDao minecraftVersionDao) {
         this.minecraftVersionDao = minecraftVersionDao;
         this.restClient = RestClient.builder()
                 .baseUrl(MINECRAFT_VERSION_MANIFEST)
@@ -93,6 +92,10 @@ public class MinecraftMetadataPollingJob implements Runnable {
             return;
         }
 
+        if (manifestContent == null) {
+            throw new IllegalArgumentException("Empty manifest received from " + discoveredVersion.url());
+        }
+
         // Create or update the manifest
         var manifest = version.getManifest();
         boolean isNew = manifest == null;
@@ -111,6 +114,18 @@ public class MinecraftMetadataPollingJob implements Runnable {
 
         if (contentChanged) {
             manifest.setLastModified(Instant.now());
+
+            // Parse manifest to extract Java version
+            try {
+                var parsedManifest = net.neoforged.meta.manifests.version.MinecraftVersionManifest.from(manifest.getContent());
+                if (parsedManifest.javaVersion() == null) {
+                    throw new IllegalStateException("Version manifest is missing java version.");
+                }
+                version.setJavaVersion(parsedManifest.javaVersion().majorVersion());
+            } catch (Exception e) {
+                logger.error("Failed to parse manifest for version {} to extract Java version",
+                        discoveredVersion.id(), e);
+            }
         }
     }
 }

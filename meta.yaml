@@ -97,6 +97,7 @@ components:
         - version
         - type
         - released
+        - javaVersion
       properties:
         version:
           type: string
@@ -109,3 +110,6 @@ components:
           type:
             - string
             - 'null'
+        javaVersion:
+          description: The major Java version required to run this Minecraft version.
+          type: integer

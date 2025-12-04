@@ -32,6 +32,12 @@ public class MinecraftVersion {
     @Column(nullable = false)
     private boolean imported;
 
+    /**
+     * The Java version declared by this Minecraft version in its launcher manifest.
+     */
+    @Column(nullable = false)
+    private int javaVersion;
+
     @OneToOne(mappedBy = "minecraftVersion", cascade = CascadeType.ALL, orphanRemoval = true)
     private @Nullable MinecraftVersionManifest manifest;
 
@@ -84,5 +90,13 @@ public class MinecraftVersion {
         if (manifest != null) {
             manifest.setMinecraftVersion(this);
         }
+    }
+
+    public int getJavaVersion() {
+        return javaVersion;
+    }
+
+    public void setJavaVersion(int javaVersion) {
+        this.javaVersion = javaVersion;
     }
 }
