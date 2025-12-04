@@ -1,0 +1,72 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.0.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.10.0'
+}
+
+group = 'net.neoforged'
+version = '0.0.1-SNAPSHOT'
+description = 'Meta API for NeoForge'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.swagger.core.v3:swagger-annotations:2.2.27'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+	runtimeOnly 'org.xerial:sqlite-jdbc:3.47.1.0'
+	runtimeOnly 'org.hibernate.orm:hibernate-community-dialects:7.0.0.Beta1'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// OpenAPI Generator configuration
+openApiGenerate {
+	generatorName = 'spring'
+	inputSpec = layout.projectDirectory.file('meta.yaml').asFile.toURI().toString()
+	outputDir = layout.buildDirectory.dir('generated').get().asFile.absolutePath
+	apiPackage = 'net.neoforged.meta.generated.api'
+	modelPackage = 'net.neoforged.meta.generated.model'
+	configOptions = [
+            annotationLibrary: 'none',
+			documentationProvider: 'none',
+			skipDefaultInterface: 'true',
+			interfaceOnly: 'true',
+            openApiNullable: 'false',
+            useSpringBoot3: 'true',
+            useSwaggerUI: 'false',
+	]
+}
+
+// Add generated sources to source sets
+sourceSets {
+	main {
+		java {
+			srcDir layout.buildDirectory.dir('generated/src/main/java')
+		}
+	}
+}
+
+// Ensure code generation runs before compilation
+tasks.named('compileJava') {
+	dependsOn tasks.openApiGenerate
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

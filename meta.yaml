@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: NeoForge Meta API v1
+  description: NeoForge Meta API v1
+  version: 1.0.0
+servers:
+  - url: 'https://meta-api.neoforged.net/v1'
+paths:
+  /versions/minecraft/:
+    get:
+      operationId: getMinecraftVersions
+      description: Gets all available Minecraft versions
+      responses:
+        200:
+          description: The list of available Minecraft versions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MinecraftVersionSummary'
+  /versions/minecraft/{versionId}/:
+    get:
+      parameters:
+        - name: versionId
+          in: path
+          required: true
+          schema:
+            type: string
+      operationId: getMinecraftVersionDetails
+      description: Gets the details for a specific Minecraft version
+      responses:
+        200:
+          description: Details about a specific Minecraft version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MinecraftVersionDetails'
+  /versions/minecraft/{versionId}/version-manifest/:
+    get:
+      parameters:
+        - name: versionId
+          in: path
+          required: true
+          schema:
+            type: string
+      operationId: getMinecraftVersionManifest
+      description: Gets the Vanilla Launcher version manifest for this version.
+      responses:
+        200:
+          description: The Vanilla Launcher version manifest for this version.
+          content:
+            application/json:
+              schema:
+                type: object
+        307:
+          description: The URL where the Vanilla Launcher version manifest is located.
+          headers:
+            Location:
+              content:
+                text/plain:
+                  schema:
+                    enum:
+                      - http://dummy
+components:
+  schemas:
+    MinecraftVersionSummary:
+      description: Summarizes an available Minecraft version
+      type: object
+      required:
+        - version
+        - type
+        - released
+        - latest_neoforge_version
+      additionalProperties: true
+      properties:
+        version:
+          type: string
+        type:
+          description: The type of this version. Known types include `release` for normal releases, `snapshot` for previews and `experimental` for experimental releases, but may include more types in the future.
+          type: string
+        released:
+          description: The timestamp when this version was released.
+          format: date-time
+          type:
+            - string
+            - 'null'
+        latest_neoforge_version:
+          description: The latest available version of NeoForge for this Minecraft version. This property being non-null indicates that NeoForge has at least one version for this Minecraft version.
+          type:
+            - string
+            - 'null'
+    MinecraftVersionDetails:
+      description: Details about a specific Minecraft version
+      type: object
+      required:
+        - version
+        - type
+        - released
+      properties:
+        version:
+          type: string
+        type:
+          description: The type of this version. Known types include `release` for normal releases, `snapshot` for previews and `experimental` for experimental releases, but may include more types in the future.
+          type: string
+        released:
+          description: The timestamp when this version was released.
+          format: date-time
+          type:
+            - string
+            - 'null'

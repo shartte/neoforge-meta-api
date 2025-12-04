@@ -1,0 +1,29 @@
+meta-api:
+  data-directory: ${DATA_DIR:./data}
+  polling:
+    enabled: true
+    cron: "0 */5 * * * *"  # Every 5 minutes
+
+spring:
+  application:
+    name: meta-api
+
+  datasource:
+    url: jdbc:sqlite:${meta-api.data-directory}/meta-api.db
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,scheduledtasks
