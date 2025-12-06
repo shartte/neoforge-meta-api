@@ -3,6 +3,8 @@ spring:
     banner-mode: off # Don't show banner in tests
 
 # Disable all scheduled jobs in tests by default
-meta-api:
-  minecraft-metadata-polling:
+scheduled-tasks:
+  maven-version-discovery:
+    enabled: false
+  minecraft-version-discovery:
     enabled: false

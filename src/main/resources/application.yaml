@@ -1,9 +1,34 @@
 meta-api:
   data-directory: ${DATA_DIR:./data}
-  minecraft-metadata-polling:
-    enabled: true
-    cron: "0 */5 * * * *"  # Every 5 minutes
   minecraft-launcher-meta-url: https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
+
+  # Maven artifact version discovery
+  components:
+    - maven-repository-id: releases
+      group-id: net.neoforged
+      artifact-id: neoforge
+      publication-rules:
+        - version-ranges:
+            - '*'
+          artifacts:
+            - classifier: universal
+            - classifier: changelog
+              extension: txt
+    - maven-repository-id: releases
+      group-id: net.neoforged.fancymodloader
+      artifact-id: loader
+
+  maven-repositories:
+    - id: releases
+      url: https://maven.neoforged.net/releases/
+
+scheduled-tasks:
+  maven-version-discovery:
+    enabled: true
+    cronPattern: "0 */10 * * * *"
+  minecraft-version-discovery:
+    enabled: true
+    cronPattern: "0 */5 * * * *"
 
 spring:
   application:

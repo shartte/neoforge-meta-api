@@ -11,18 +11,21 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HexFormat;
 
 @Component
-public class MinecraftMetadataPollingJob implements Runnable {
+public class MinecraftVersionDiscoveryJob implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(MinecraftMetadataPollingJob.class);
+    private static final Logger logger = LoggerFactory.getLogger(MinecraftVersionDiscoveryJob.class);
 
     private final RestClient restClient;
 
     private final MinecraftVersionDao minecraftVersionDao;
 
-    public MinecraftMetadataPollingJob(MinecraftVersionDao minecraftVersionDao, MetaApiProperties apiProperties) {
+    public MinecraftVersionDiscoveryJob(MinecraftVersionDao minecraftVersionDao, MetaApiProperties apiProperties) {
         this.minecraftVersionDao = minecraftVersionDao;
         this.restClient = RestClient.builder()
                 .baseUrl(apiProperties.getMinecraftLauncherMetaUrl())
@@ -32,46 +35,53 @@ public class MinecraftMetadataPollingJob implements Runnable {
     @Override
     @Transactional
     public void run() {
-        try {
-            logger.info("Starting Minecraft metadata polling job");
+        logger.info("Starting Minecraft metadata polling job");
 
-            var launcherManifest = restClient.get()
-                    .retrieve()
-                    .body(LauncherManifest.class);
+        var launcherManifest = restClient.get()
+                .retrieve()
+                .body(LauncherManifest.class);
 
-            var existingVersions = minecraftVersionDao.getAllVersions();
+        var existingVersions = minecraftVersionDao.getAllVersions();
 
-            logger.info("Discovered {} versions. {} are already known.", launcherManifest.versions().size(), existingVersions.size());
-            var versionsAdded = 0;
-            var versionsChanged = 0;
+        logger.info("Discovered {} versions. {} are already known.", launcherManifest.versions().size(), existingVersions.size());
+        var versionsAdded = 0;
+        var versionsChanged = 0;
 
-            for (var discoveredVersion : launcherManifest.versions()) {
-                logger.trace("Working on version {}", discoveredVersion.id());
-                var existingVersion = minecraftVersionDao.getByVersion(discoveredVersion.id());
-                if (existingVersion != null) {
-                    // Check if manifest changed
-                    var existingManifest = existingVersion.getManifest();
-                    boolean manifestChanged = existingManifest == null ||
-                            !existingManifest.getSha1().equals(discoveredVersion.sha1());
+        for (var discoveredVersion : launcherManifest.versions()) {
+            logger.trace("Working on version {}", discoveredVersion.id());
+            var existingVersion = minecraftVersionDao.getByVersion(discoveredVersion.id());
+            if (existingVersion != null) {
+                // Check if manifest changed
+                var existingManifest = existingVersion.getManifest();
+                boolean manifestChanged = existingManifest == null ||
+                        !existingManifest.getSha1().equals(discoveredVersion.sha1());
 
-                    if (manifestChanged) {
+                if (manifestChanged) {
+                    try {
                         updateVersion(discoveredVersion, existingVersion);
-                        versionsChanged++;
+                    } catch (Exception e) {
+                        logger.error("Failed to update version {}", discoveredVersion.id(), e);
+                        minecraftVersionDao.flush();
+                        continue;
                     }
-                } else {
-                    existingVersion = new MinecraftVersion();
-                    existingVersion.setVersion(discoveredVersion.id());
-                    existingVersion.setImported(true);
-                    updateVersion(discoveredVersion, existingVersion);
-                    minecraftVersionDao.save(existingVersion);
-                    versionsAdded++;
+                    versionsChanged++;
                 }
+            } else {
+                existingVersion = new MinecraftVersion();
+                existingVersion.setVersion(discoveredVersion.id());
+                existingVersion.setImported(true);
+                try {
+                    updateVersion(discoveredVersion, existingVersion);
+                    minecraftVersionDao.saveAndFlush(existingVersion);
+                } catch (Exception e) {
+                    logger.error("Failed to create version {}", discoveredVersion.id(), e);
+                    continue;
+                }
+                versionsAdded++;
             }
-
-            logger.info("Completed Minecraft metadata polling job. Versions added: {}, changed: {}", versionsAdded, versionsChanged);
-        } catch (Exception e) {
-            logger.error("Error polling Minecraft metadata", e);
         }
+
+        logger.info("Completed Minecraft metadata polling job. Versions added: {}, changed: {}", versionsAdded, versionsChanged);
     }
 
     private void updateVersion(LauncherManifest.Version discoveredVersion, MinecraftVersion version) {
@@ -93,6 +103,19 @@ public class MinecraftMetadataPollingJob implements Runnable {
 
         if (manifestContent == null) {
             throw new IllegalArgumentException("Empty manifest received from " + discoveredVersion.url());
+        }
+
+        // Verify SHA1 checksum
+        String actualSha1 = calculateSha1(manifestContent);
+        if (!actualSha1.equalsIgnoreCase(discoveredVersion.sha1())) {
+            String errorMsg = String.format(
+                    "SHA1 checksum mismatch for version %s manifest. Expected: %s, Got: %s",
+                    discoveredVersion.id(),
+                    discoveredVersion.sha1(),
+                    actualSha1
+            );
+            logger.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
         }
 
         // Create or update the manifest
@@ -125,6 +148,16 @@ public class MinecraftMetadataPollingJob implements Runnable {
                 logger.error("Failed to parse manifest for version {} to extract Java version",
                         discoveredVersion.id(), e);
             }
+        }
+    }
+
+    private String calculateSha1(String content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            byte[] hash = digest.digest(content.getBytes());
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-1 algorithm not available", e);
         }
     }
 }

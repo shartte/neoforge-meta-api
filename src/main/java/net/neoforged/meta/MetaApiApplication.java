@@ -1,7 +1,8 @@
 package net.neoforged.meta;
 
 import net.neoforged.meta.config.MetaApiProperties;
-import net.neoforged.meta.jobs.MinecraftMetadataPollingJob;
+import net.neoforged.meta.jobs.MavenVersionDiscoveryJob;
+import net.neoforged.meta.jobs.MinecraftVersionDiscoveryJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner;
@@ -12,6 +13,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.client.RestClient;
 
 @SpringBootApplication
 @EnableConfigurationProperties(MetaApiProperties.class)
@@ -35,8 +37,11 @@ public class MetaApiApplication {
             System.arraycopy(args, 1, springArgs, 0, args.length - 1);
 
             switch (potentialSubcommand) {
-                case "poll-minecraft-metadata":
-                    runConsoleCommand(MinecraftMetadataPollingJob.class, springArgs);
+                case "poll-minecraft-versions":
+                    runConsoleCommand(MinecraftVersionDiscoveryJob.class, springArgs);
+                    return;
+                case "poll-maven-versions":
+                    runConsoleCommand(MavenVersionDiscoveryJob.class, springArgs);
                     return;
             }
         }

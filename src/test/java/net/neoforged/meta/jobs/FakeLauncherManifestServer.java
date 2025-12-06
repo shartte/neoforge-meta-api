@@ -3,6 +3,7 @@ package net.neoforged.meta.jobs;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import net.neoforged.meta.util.HashingUtil;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -140,30 +141,17 @@ public class FakeLauncherManifestServer implements AutoCloseable {
          * @return This builder for chaining
          */
         public VersionBuilder withManifest(int javaMajorVersion) {
-            return withManifest(javaMajorVersion, getDefaultJavaComponent(javaMajorVersion));
-        }
-
-        /**
-         * Set the version manifest JSON content and configure the server to serve it.
-         *
-         * @param javaMajorVersion The Java major version required by this Minecraft version
-         * @param javaComponent    The Java runtime component name (e.g., "java-runtime-delta")
-         * @return This builder for chaining
-         */
-        public VersionBuilder withManifest(int javaMajorVersion, String javaComponent) {
             // Build the manifest JSON
             String manifestJson = String.format("""
                             {
                                 "id": "%s",
                                 "type": "%s",
                                 "javaVersion": {
-                                    "component": "%s",
                                     "majorVersion": %d
                                 }
                             }""",
                     entry.id,
                     entry.type,
-                    javaComponent,
                     javaMajorVersion
             );
 
@@ -185,18 +173,11 @@ public class FakeLauncherManifestServer implements AutoCloseable {
             // Store the manifest content
             versionManifests.put(manifestPath, manifestJson);
 
-            return this;
-        }
+            if (entry.sha1 == null) {
+                entry.sha1 = HashingUtil.sha1(manifestJson);
+            }
 
-        private String getDefaultJavaComponent(int javaMajorVersion) {
-            // Map common Java versions to their runtime components
-            return switch (javaMajorVersion) {
-                case 8 -> "jre-legacy";
-                case 16 -> "java-runtime-alpha";
-                case 17 -> "java-runtime-gamma";
-                case 21 -> "java-runtime-delta";
-                default -> "java-runtime-delta";
-            };
+            return this;
         }
     }
 
@@ -207,7 +188,7 @@ public class FakeLauncherManifestServer implements AutoCloseable {
         final String id;
         final String type;
         URI url;
-        String sha1 = "0000000000000000000000000000000000000000"; // Default SHA-1
+        String sha1;
         OffsetDateTime releaseTime = OffsetDateTime.now();
 
         VersionEntry(String id, String type) {

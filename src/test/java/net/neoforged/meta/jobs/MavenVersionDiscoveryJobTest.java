@@ -1,7 +1,10 @@
 package net.neoforged.meta.jobs;
 
-import net.neoforged.meta.db.MinecraftVersionDao;
+import net.neoforged.meta.db.MavenComponentVersion;
+import net.neoforged.meta.db.MavenComponentVersionDao;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,12 +20,14 @@ import org.springframework.test.context.ContextConfiguration;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Integration test for MavenVersionDiscoveryJob.
  * <p>
  * This test uses:
- * - A real embedded HTTP server (JDK's HttpServer) to serve fake Maven metadata
+ * - A real embedded HTTP server (JDK's HttpServer) to serve fake Maven API responses
  * - A real Spring context with minimal configuration (no web server, no scheduled jobs)
  * - A temporary SQLite database for isolation
  * - Manual job execution with DAO verification
@@ -35,121 +40,115 @@ class MavenVersionDiscoveryJobTest {
     @TempDir
     static Path tempDir;
 
+    @AutoClose
+    static FakeMavenRepository mavenRepo;
+
+    @BeforeAll
+    static void setupMavenRepo() {
+        mavenRepo = new FakeMavenRepository();
+    }
+
     @Autowired
     ApplicationContext applicationContext;
 
     @Autowired
-    MinecraftVersionDao minecraftVersionDao;
+    MavenComponentVersionDao versionDao;
 
-    @AutoClose
-    private FakeMavenRepository mavenRepo = new FakeMavenRepository();
+    @Autowired
+    private MavenVersionDiscoveryJob job;
+
+    @AfterEach
+    void tearDown() {
+        // Clean up database and server after each test
+        versionDao.deleteAll();
+        mavenRepo.clear();
+    }
 
     @Test
-    void testDiscoverVersionsFromMavenMetadata() {
+    void testDiscoverVersionsFromMavenApi() {
         // Set up fake Maven repository with multiple versions
-        mavenRepo.addArtifact("net.neoforged", "neoforge")
+        mavenRepo.addArtifact("releases", "net.neoforged", "neoforge")
                 .withVersion("21.3.0-beta")
                 .withVersion("21.3.1-beta")
                 .withVersion("21.3.2")
                 .withVersion("21.3.3")
                 .withVersion("21.3.4")
                 .withVersion("21.3.5-beta")
-                .withLatest("21.3.5-beta")
-                .withRelease("21.3.4");
-
-        // Create and run the job
-        MavenVersionDiscoveryJob job = new MavenVersionDiscoveryJob(
-                mavenRepo.getBaseUrl(),
-                "net.neoforged",
-                "neoforge"
-        );
+                .withSnapshot(false);
 
         job.run();
 
         // Verify results using DAOs
-        // TODO: Add assertions once the job implementation is complete
-        // For example:
-        // var versions = neoforgeVersionDao.findAll();
-        // assertEquals(6, versions.size());
-        // assertTrue(versions.stream().anyMatch(v -> v.getVersion().equals("21.3.5-beta")));
+        var versions = versionDao.findAll();
+        assertEquals(6, versions.size());
+
+        var versionStrings = versionDao.findAllVersionsByGA("net.neoforged", "neoforge");
+        assertTrue(versionStrings.contains("21.3.5-beta"));
+        assertTrue(versionStrings.contains("21.3.0-beta"));
+        assertTrue(versionStrings.contains("21.3.4"));
+
+        // Verify all are marked as not snapshot
+        assertTrue(versions.stream().noneMatch(MavenComponentVersion::isSnapshot));
     }
 
     @Test
-    void testHandlesMissingMavenMetadata() {
+    void testHandlesMissingArtifact() {
         // Configure repository to return 404
-        mavenRepo.addMissingArtifact("net.neoforged", "neoforge");
-
-        MavenVersionDiscoveryJob job = new MavenVersionDiscoveryJob(
-                mavenRepo.getBaseUrl(),
-                "net.neoforged",
-                "neoforge"
-        );
+        mavenRepo.addMissingArtifact("releases", "net.neoforged", "neoforge");
 
         // Should not throw exception
         assertDoesNotThrow(job::run);
 
         // Verify no versions were added
-        // TODO: Add assertions
+        assertEquals(0, versionDao.findAll().size());
     }
 
     @Test
-    void testHandlesInvalidXml() {
-        // Configure repository to return invalid XML
-        mavenRepo.addInvalidArtifact("net.neoforged", "neoforge");
-
-        MavenVersionDiscoveryJob job = new MavenVersionDiscoveryJob(
-                mavenRepo.getBaseUrl(),
-                "net.neoforged",
-                "neoforge"
-        );
+    void testHandlesInvalidJson() {
+        // Configure repository to return invalid JSON
+        mavenRepo.addInvalidArtifact("releases", "net.neoforged", "neoforge");
 
         // Should handle gracefully
         assertDoesNotThrow(job::run);
 
         // Verify no versions were added
-        // TODO: Add assertions
+        assertEquals(0, versionDao.findAll().size());
     }
 
     @Test
-    void testUpdatesExistingVersions() {
+    void testAddsNewVersions() {
         // Set up repository with initial versions
-        mavenRepo.addArtifact("net.neoforged", "neoforge")
+        mavenRepo.addArtifact("releases", "net.neoforged", "neoforge")
                 .withVersion("21.3.0")
                 .withVersion("21.3.1")
-                .withLatest("21.3.1")
-                .withRelease("21.3.1");
-
-        MavenVersionDiscoveryJob job = new MavenVersionDiscoveryJob(
-                mavenRepo.getBaseUrl(),
-                "net.neoforged",
-                "neoforge"
-        );
+                .withSnapshot(false);
 
         // Run job first time
         job.run();
 
-        // TODO: Verify initial versions were added
+        // Verify initial versions were added
+        assertEquals(2, versionDao.findAll().size());
 
-        // Stop and restart with updated versions
+        // Update repository with new version
         mavenRepo.clear();
-        mavenRepo.addArtifact("net.neoforged", "neoforge")
+        mavenRepo.addArtifact("releases", "net.neoforged", "neoforge")
                 .withVersion("21.3.0")
                 .withVersion("21.3.1")
                 .withVersion("21.3.2")  // New version
-                .withLatest("21.3.2")
-                .withRelease("21.3.2");
+                .withSnapshot(false);
 
         // Run job again with updated repository
-        job = new MavenVersionDiscoveryJob(
-                mavenRepo.getBaseUrl(),
-                "net.neoforged",
-                "neoforge"
-        );
         job.run();
 
-        // TODO: Verify new version was added
-        // var versions = neoforgeVersionDao.findAll();
-        // assertEquals(3, versions.size());
+        // Verify new version was added (existing versions should not be duplicated)
+        var versions = versionDao.findAll();
+        assertEquals(3, versions.size());
+
+        // Verify all versions are present
+        var versionStrings = versionDao.findAllVersionsByGA("net.neoforged", "neoforge");
+        assertTrue(versionStrings.contains("21.3.0"));
+        assertTrue(versionStrings.contains("21.3.1"));
+        assertTrue(versionStrings.contains("21.3.2"));
     }
 
     public static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
