@@ -9,8 +9,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 public record LauncherManifest(List<Version> versions) {
-    public static LauncherManifest from(Path path) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    public static LauncherManifest from(Path path) {
         return mapper.readValue(path.toFile(), LauncherManifest.class);
     }
 

@@ -10,11 +10,11 @@ meta-api:
       publication-rules:
           # No Gradle ".module" metadata in these versions
           - version-ranges:
-              - '[20.2,20.3)'
-              - '[20.3,20.4)'
-              - '[20.4,20.4.238)'
-              - '[20.5,20.6)'
-              - '[20.6,20.6.122)'
+              - '[20.2-alpha,20.3)'
+              - '[20.3-alpha,20.4)'
+              - '[20.4-alpha,20.4.238)'
+              - '[20.5-alpha,20.6)'
+              - '[20.6-alpha,20.6.122)'
             artifacts:
             - extension: pom
             - classifier: universal
@@ -40,10 +40,8 @@ meta-api:
 
   maven-repositories:
     - id: releases
-      #url: https://maven-direct.neoforged.net/releases-local/
+      #url: https://maven.prod.k8s.neoforged.net/releases/
       url: http://localhost:8088/
-      headers:
-        cdnauth: ${secrets.cdnauth}
 
 scheduled-tasks:
   maven-version-discovery:

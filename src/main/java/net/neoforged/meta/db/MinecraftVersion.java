@@ -6,10 +6,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class MinecraftVersion {
@@ -40,6 +43,9 @@ public class MinecraftVersion {
 
     @OneToOne(mappedBy = "minecraftVersion", cascade = CascadeType.ALL, orphanRemoval = true)
     private @Nullable MinecraftVersionManifest manifest;
+
+    @OneToMany(mappedBy = "minecraftVersion")
+    private List<NeoForgeVersion> neoForgeVersions = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -98,5 +104,13 @@ public class MinecraftVersion {
 
     public void setJavaVersion(int javaVersion) {
         this.javaVersion = javaVersion;
+    }
+
+    public List<NeoForgeVersion> getNeoForgeVersions() {
+        return neoForgeVersions;
+    }
+
+    public void setNeoForgeVersions(List<NeoForgeVersion> neoForgeVersions) {
+        this.neoForgeVersions = neoForgeVersions;
     }
 }

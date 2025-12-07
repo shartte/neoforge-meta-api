@@ -4,6 +4,7 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,10 @@ public record MinecraftVersionManifest(String id, Map<String, MinecraftDownload>
 
     public static MinecraftVersionManifest from(Path path) {
         return MAPPER.readValue(path.toFile(), MinecraftVersionManifest.class);
+    }
+
+    public static MinecraftVersionManifest from(InputStream input) {
+        return MAPPER.readValue(input, MinecraftVersionManifest.class);
     }
 
     public static MinecraftVersionManifest from(String jsonContent) {

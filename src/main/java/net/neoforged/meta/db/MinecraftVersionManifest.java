@@ -1,6 +1,7 @@
 package net.neoforged.meta.db;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -45,7 +46,7 @@ public class MinecraftVersionManifest {
      * Automatically compressed using deflate.
      */
     @Column(nullable = false, columnDefinition = "BLOB")
-    @jakarta.persistence.Convert(converter = DeflateConverter.class)
+    @Convert(converter = DeflateConverter.class)
     private String content;
 
     public Long getId() {

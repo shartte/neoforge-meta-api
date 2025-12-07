@@ -1,6 +1,8 @@
 package net.neoforged.meta.api;
 
 import net.neoforged.meta.db.MinecraftVersionDao;
+import net.neoforged.meta.db.NeoForgeVersion;
+import net.neoforged.meta.db.NeoForgeVersionDao;
 import net.neoforged.meta.generated.model.MinecraftVersionDetails;
 import net.neoforged.meta.generated.model.MinecraftVersionSummary;
 import org.springframework.http.HttpHeaders;
@@ -11,25 +13,41 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 public class VersionsController implements net.neoforged.meta.generated.api.VersionsApi {
 
     private final MinecraftVersionDao minecraftVersionDao;
+    private final NeoForgeVersionDao neoForgeVersionDao;
 
-    public VersionsController(MinecraftVersionDao minecraftVersionDao) {
+    public VersionsController(MinecraftVersionDao minecraftVersionDao, NeoForgeVersionDao neoForgeVersionDao) {
         this.minecraftVersionDao = minecraftVersionDao;
+        this.neoForgeVersionDao = neoForgeVersionDao;
     }
 
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<List<MinecraftVersionSummary>> getMinecraftVersions() {
+        // Build a map from minecraft version to latest NF version available for that
+        var latestNeoForgeVersions = neoForgeVersionDao.findLatestForAllMinecraftVersions()
+                .stream()
+                .collect(Collectors.toMap(
+                        NeoForgeVersion::getMinecraftVersion,
+                        v -> v,
+                        (a, _) -> a
+                ));
+
         var result = new ArrayList<MinecraftVersionSummary>();
         for (var version : minecraftVersionDao.findAll()) {
             var summary = new MinecraftVersionSummary();
             summary.setVersion(version.getVersion());
             summary.setReleased(version.getReleased().atOffset(ZoneOffset.UTC));
             summary.setType(version.getType());
+            var neoForgeVersion = latestNeoForgeVersions.get(version);
+            if (neoForgeVersion != null) {
+                summary.setLatestNeoforgeVersion(neoForgeVersion.getVersion());
+            }
             result.add(summary);
         }
 

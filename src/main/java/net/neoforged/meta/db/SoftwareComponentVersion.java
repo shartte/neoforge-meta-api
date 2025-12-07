@@ -7,6 +7,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -27,6 +29,7 @@ import java.util.Objects;
                 @Index(name = "idx_maven_gav", columnList = "groupId, artifactId, version", unique = true)
         }
 )
+@Inheritance(strategy = InheritanceType.JOINED)
 public class SoftwareComponentVersion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
