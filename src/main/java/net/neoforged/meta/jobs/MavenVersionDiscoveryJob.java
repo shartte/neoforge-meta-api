@@ -6,7 +6,7 @@ import net.neoforged.meta.config.SoftwareComponentProperties;
 import net.neoforged.meta.config.SoftwareComponentPublicationPropertiesRule;
 import net.neoforged.meta.db.BrokenSoftwareComponentVersion;
 import net.neoforged.meta.db.BrokenSoftwareComponentVersionDao;
-import net.neoforged.meta.db.DiscoveryError;
+import net.neoforged.meta.db.DiscoveryLogMessage;
 import net.neoforged.meta.db.MavenComponentVersionDao;
 import net.neoforged.meta.db.MinecraftVersionDao;
 import net.neoforged.meta.db.NeoForgeVersion;
@@ -52,6 +52,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
     private final MinecraftVersionDao minecraftVersionDao;
     private final BrokenSoftwareComponentVersionDao brokenSoftwareComponentVersionDao;
     private final EventService eventService;
+    private final MetaApiProperties metaApiProperties;
 
     public MavenVersionDiscoveryJob(
             MavenComponentVersionDao versionDao,
@@ -61,7 +62,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
             NeoForgeVersionDao neoForgeVersionDao,
             MinecraftVersionDao minecraftVersionDao,
             BrokenSoftwareComponentVersionDao brokenSoftwareComponentVersionDao,
-            EventService eventService) {
+            EventService eventService, MetaApiProperties metaApiProperties) {
         this.versionDao = versionDao;
         this.components = apiProperties.getComponents();
         this.mavenRepositories = mavenRepositories;
@@ -70,6 +71,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
         this.minecraftVersionDao = minecraftVersionDao;
         this.brokenSoftwareComponentVersionDao = brokenSoftwareComponentVersionDao;
         this.eventService = eventService;
+        this.metaApiProperties = metaApiProperties;
     }
 
     @Override
@@ -150,7 +152,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
                             brokenVersion.setAttempts(1);
                         }
 
-                        var error = new DiscoveryError();
+                        var error = new DiscoveryLogMessage();
                         var sw = new StringWriter();
                         var w = new PrintWriter(sw);
                         e.printStackTrace(w);
@@ -187,6 +189,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
 
             byte[] installerContent = mavenRepositories.getArtifact(versionEntity.getRepository(), versionEntity.getGroupId(), versionEntity.getArtifactId(), versionEntity.getVersion(), installerArtifact.getClassifier(), installerArtifact.getExtension());
             var versionMetadata = NeoForgeVersionExtractor.extract(installerContent);
+            neoForgeVersion.setReleased(versionMetadata.releaseTime()); // The time in the profile may be more accurate
 
             var minecraftVersion = minecraftVersionDao.getByVersion(versionMetadata.minecraftVersion());
             if (minecraftVersion == null) {
@@ -197,6 +200,9 @@ public class MavenVersionDiscoveryJob implements Runnable {
             neoForgeVersion.setInstallerProfile(versionMetadata.installerProfile());
             neoForgeVersion.setLauncherProfile(versionMetadata.launcherProfile());
             neoForgeVersion.setLauncherProfileId(versionMetadata.launcherProfileId());
+            neoForgeVersion.setLibraries(versionMetadata.libraries());
+            neoForgeVersion.setServerArgsUnix(versionMetadata.serverArgsUnix());
+            neoForgeVersion.setServerArgsWindows(versionMetadata.serverArgsWindows());
             neoForgeVersionDao.saveAndFlush(neoForgeVersion);
         } else {
             discoverBaseVersion(component, version, versionEntity = new SoftwareComponentVersion());
@@ -210,6 +216,8 @@ public class MavenVersionDiscoveryJob implements Runnable {
     private void discoverBaseVersion(SoftwareComponentProperties component,
                                      String version,
                                      SoftwareComponentVersion versionEntity) {
+        versionEntity.getWarnings().clear(); // Clear all previous warnings when discovery starts
+
         versionEntity.setGroupId(component.getGroupId());
         versionEntity.setArtifactId(component.getArtifactId());
         versionEntity.setVersion(version);
@@ -245,15 +253,14 @@ public class MavenVersionDiscoveryJob implements Runnable {
     private void parseChangelog(SoftwareComponentVersion versionEntity, SoftwareComponentArtifact changelogArtifact) {
         var changelogBody = mavenRepositories.getArtifact(versionEntity.getRepository(), versionEntity.getGroupId(), versionEntity.getArtifactId(), versionEntity.getVersion(), changelogArtifact.getClassifier(), changelogArtifact.getExtension());
 
-        var changelogEntry = ChangelogExtractor.extract(changelogBody, versionEntity.getVersion());
+        var changelogEntry = ChangelogExtractor.extract(changelogBody);
         if (changelogEntry != null) {
             var changelogEntity = new SoftwareComponentChangelog();
             changelogEntity.setComponentVersion(versionEntity);
             changelogEntity.setChangelog(changelogEntry);
             versionEntity.setChangelog(changelogEntity);
         } else {
-            // TODO associate this as a parsing warning with the version
-            logger.warn("Couldn't find changelog entry for version {}", versionEntity.getVersion());
+            versionEntity.addWarning("Couldn't find changelog entry.");
         }
     }
 

@@ -1,7 +1,9 @@
 package net.neoforged.meta.db;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -46,6 +48,10 @@ public class MinecraftVersion {
 
     @OneToMany(mappedBy = "minecraftVersion")
     private List<NeoForgeVersion> neoForgeVersions = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "minecraft_version_libraries")
+    private List<ReferencedLibrary> libraries = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -112,5 +118,13 @@ public class MinecraftVersion {
 
     public void setNeoForgeVersions(List<NeoForgeVersion> neoForgeVersions) {
         this.neoForgeVersions = neoForgeVersions;
+    }
+
+    public List<ReferencedLibrary> getLibraries() {
+        return libraries;
+    }
+
+    public void setLibraries(List<ReferencedLibrary> libraries) {
+        this.libraries = libraries;
     }
 }

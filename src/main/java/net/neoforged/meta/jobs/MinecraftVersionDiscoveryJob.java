@@ -4,7 +4,11 @@ import net.neoforged.meta.config.MetaApiProperties;
 import net.neoforged.meta.db.MinecraftVersion;
 import net.neoforged.meta.db.MinecraftVersionDao;
 import net.neoforged.meta.db.MinecraftVersionManifest;
+import net.neoforged.meta.db.ReferencedLibrary;
 import net.neoforged.meta.manifests.launcher.LauncherManifest;
+import net.neoforged.meta.manifests.version.MinecraftDownload;
+import net.neoforged.meta.manifests.version.MinecraftLibrary;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -14,7 +18,10 @@ import org.springframework.web.client.RestClient;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.List;
 
 @Component
 public class MinecraftVersionDiscoveryJob implements Runnable {
@@ -141,12 +148,25 @@ public class MinecraftVersionDiscoveryJob implements Runnable {
             try {
                 var parsedManifest = net.neoforged.meta.manifests.version.MinecraftVersionManifest.from(manifest.getContent());
                 if (parsedManifest.javaVersion() == null) {
-                    throw new IllegalStateException("Version manifest is missing java version.");
+                    // For some very old versions, we allow this
+                    if (parsedManifest.releaseTime().isBefore(OffsetDateTime.parse("2014-01-01T00:00:00Z").toInstant())) {
+                        version.setJavaVersion(8);
+                    } else {
+                        throw new IllegalStateException("Version manifest is missing java version.");
+                    }
+                } else {
+                    version.setJavaVersion(parsedManifest.javaVersion().majorVersion());
                 }
-                version.setJavaVersion(parsedManifest.javaVersion().majorVersion());
+
+                version.getLibraries().clear();
+                for (var library : parsedManifest.libraries()) {
+                    for (var referencedLibrary : ReferencedLibrary.of(library)) {
+                        referencedLibrary.setClientClasspath(true);
+                        version.getLibraries().add(referencedLibrary);
+                    }
+                }
             } catch (Exception e) {
-                logger.error("Failed to parse manifest for version {} to extract Java version",
-                        discoveredVersion.id(), e);
+                logger.error("Failed to parse manifest for version {}", discoveredVersion.id(), e);
             }
         }
     }

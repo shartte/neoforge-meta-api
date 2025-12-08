@@ -56,7 +56,7 @@ public class BrokenSoftwareComponentVersion {
     private int attempts;
 
     @ElementCollection
-    private List<DiscoveryError> errors = new ArrayList<>();
+    private List<DiscoveryLogMessage> errors = new ArrayList<>();
 
     public void setId(Long id) {
         this.id = id;
@@ -90,11 +90,11 @@ public class BrokenSoftwareComponentVersion {
         this.version = version;
     }
 
-    public List<DiscoveryError> getErrors() {
+    public List<DiscoveryLogMessage> getErrors() {
         return errors;
     }
 
-    public void setErrors(List<DiscoveryError> failureCode) {
+    public void setErrors(List<DiscoveryLogMessage> failureCode) {
         this.errors = failureCode;
     }
 

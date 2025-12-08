@@ -6,7 +6,7 @@ import jakarta.persistence.Embeddable;
  * Describes a specific error that occurred during version discovery.
  */
 @Embeddable
-public class DiscoveryError {
+public class DiscoveryLogMessage {
     private String details;
 
     public String getDetails() {

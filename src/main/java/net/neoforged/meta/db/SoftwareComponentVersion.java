@@ -2,6 +2,7 @@ package net.neoforged.meta.db;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -84,6 +85,9 @@ public class SoftwareComponentVersion {
 
     @OneToMany(mappedBy = "componentVersion", cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
     private List<SoftwareComponentArtifact> artifacts = new ArrayList<>();
+
+    @ElementCollection
+    private List<DiscoveryLogMessage> warnings = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -173,5 +177,19 @@ public class SoftwareComponentVersion {
             }
         }
         return null;
+    }
+
+    public List<DiscoveryLogMessage> getWarnings() {
+        return warnings;
+    }
+
+    public void setWarnings(List<DiscoveryLogMessage> warnings) {
+        this.warnings = warnings;
+    }
+
+    public void addWarning(String message) {
+        var warning = new DiscoveryLogMessage();
+        warning.setDetails(message);
+        warnings.add(warning);
     }
 }
