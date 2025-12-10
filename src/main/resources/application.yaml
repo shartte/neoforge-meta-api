@@ -53,6 +53,7 @@ meta-api:
     - id: releases
       #url: https://maven.prod.k8s.neoforged.net/releases/
       url: http://localhost:8088/
+      external-url: https://maven.neoforged.net/releases/
 
 scheduled-tasks:
   maven-version-discovery:
@@ -96,7 +97,8 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        # format_sql: true
+        show_sql: true
     open-in-view: false
 
 management:

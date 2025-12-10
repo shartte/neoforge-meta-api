@@ -4,7 +4,7 @@ import net.neoforged.meta.config.MetaApiProperties;
 import net.neoforged.meta.config.SoftwareComponentArtifactProperties;
 import net.neoforged.meta.config.SoftwareComponentProperties;
 import net.neoforged.meta.config.SoftwareComponentPublicationPropertiesRule;
-import net.neoforged.meta.db.MavenComponentVersionDao;
+import net.neoforged.meta.db.SoftwareComponentVersionDao;
 import net.neoforged.meta.db.MinecraftVersionDao;
 import net.neoforged.meta.db.NeoForgeVersion;
 import net.neoforged.meta.db.NeoForgeVersionDao;
@@ -38,7 +38,7 @@ import java.util.Set;
 public class MavenVersionDiscoveryJob implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(MavenVersionDiscoveryJob.class);
 
-    private final MavenComponentVersionDao versionDao;
+    private final SoftwareComponentVersionDao versionDao;
     private final List<SoftwareComponentProperties> components;
     private final MavenRepositoriesFacade mavenRepositories;
     private final TransactionTemplate transactionTemplate;
@@ -48,7 +48,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
     private final BrokenVersionService brokenVersionService;
 
     public MavenVersionDiscoveryJob(
-            MavenComponentVersionDao versionDao,
+            SoftwareComponentVersionDao versionDao,
             MetaApiProperties apiProperties,
             MavenRepositoriesFacade mavenRepositories,
             TransactionTemplate transactionTemplate,

@@ -1,14 +1,16 @@
 package net.neoforged.meta.db;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 
 @Repository
-public interface MavenComponentVersionDao extends JpaRepository<SoftwareComponentVersion, Long> {
+public interface SoftwareComponentVersionDao extends JpaRepository<SoftwareComponentVersion, Long> {
 
     /**
      * Find a specific version of a Maven artifact.
@@ -29,8 +31,16 @@ public interface MavenComponentVersionDao extends JpaRepository<SoftwareComponen
      * @param artifactId The Maven artifact ID
      * @return List of all versions for this artifact
      */
-    @Query("from SoftwareComponentVersion where groupId = :groupId and artifactId = :artifactId order by discovered desc")
-    List<SoftwareComponentVersion> findAllByGA(String groupId, String artifactId);
+    @Query("select v.version, v.released, v.discovered, v.repository, size(v.warnings), size(v.artifacts) from SoftwareComponentVersion v where v.groupId = :groupId and v.artifactId = :artifactId order by v.released desc")
+    List<Summary> findSummaryByGA(String groupId, String artifactId);
+
+    record Summary(String version,
+                   Instant released,
+                   Instant discovered,
+                   String repository,
+                   int warningCount,
+                   int artifactCount) {
+    }
 
     /**
      * Get all version strings for a specific Maven artifact.
@@ -52,4 +62,10 @@ public interface MavenComponentVersionDao extends JpaRepository<SoftwareComponen
      */
     @Query("select count(*) > 0 from SoftwareComponentVersion where groupId = :groupId and artifactId = :artifactId and version = :version")
     boolean existsByGAV(String groupId, String artifactId, String version);
+
+    @Query("select v.version, v.released from SoftwareComponentVersion v where v.groupId = :groupId and v.artifactId = :artifactId")
+    List<VersionSummary> getVersionSummary(String groupId, String artifactId);
+
+    public record VersionSummary(String version, Instant released) {
+    }
 }

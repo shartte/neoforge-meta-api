@@ -1,6 +1,6 @@
 package net.neoforged.meta.jobs;
 
-import net.neoforged.meta.db.MavenComponentVersionDao;
+import net.neoforged.meta.db.SoftwareComponentVersionDao;
 import net.neoforged.meta.db.MinecraftVersion;
 import net.neoforged.meta.db.MinecraftVersionDao;
 import net.neoforged.meta.db.SoftwareComponentVersion;
@@ -55,7 +55,7 @@ class MavenVersionDiscoveryJobTest {
     MinecraftVersionDao minecraftVersionDao;
 
     @Autowired
-    MavenComponentVersionDao versionDao;
+    SoftwareComponentVersionDao versionDao;
 
     @Autowired
     private MavenVersionDiscoveryJob job;

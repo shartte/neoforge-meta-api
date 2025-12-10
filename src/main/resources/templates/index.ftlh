@@ -13,6 +13,7 @@
 
         <ul>
             <li><a href="/ui/minecraft-versions">Minecraft Versions</a></li>
+            <li><a href="/ui/components">Components</a></li>
             <li><a href="/ui/broken-versions">Broken Versions</a></li>
             <li><a href="/ui/jobs">Jobs</a></li>
         </ul>

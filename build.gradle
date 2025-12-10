@@ -40,6 +40,7 @@ jib {
     }
     container {
         ports = ['8080']
+        jvmFlags = ['--enable-native-access=ALL-UNNAMED']
         labels.putAll(dockerMetadataJson.map { it['labels'] as Map })
     }
 }
