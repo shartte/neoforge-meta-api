@@ -64,7 +64,7 @@ public class MinecraftVersion {
      * A flag that can be set to true to force this version to be reimported next time the Minecraft
      * versions are scanned.
      */
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "default 0")
     private boolean reimport;
 
     public Long getId() {
