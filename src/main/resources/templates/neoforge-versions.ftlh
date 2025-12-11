@@ -1,30 +1,26 @@
-<#-- @ftlvariable name="versions" type="net.neoforged.meta.db.SoftwareComponentVersionDao.Summary[]" -->
+<#-- @ftlvariable name="versions" type="net.neoforged.meta.db.NeoForgeVersion[]" -->
 <#import "page.ftlh" as page>
 
-<@page.layout title="Component Versions - NeoForge Meta API">
+<@page.layout title="NeoForge Versions - NeoForge Meta API">
     <section>
-        <h2>Component Versions</h2>
+        <h2>NeoForge Versions</h2>
 
-        <p>Showing ${versions?size} component versions.</p>
+        <p>Showing ${versions?size} NeoForge versions. Show <a href="/v1/versions/neoforge/">/v1/versions/neoforge/</a> response.</p>
 
-        <table id="componentVersions" class="display">
+        <table id="neoForgeVersions" class="display">
             <thead>
             <tr>
                 <th>Version</th>
-                <th>Warnings</th>
-                <th>Artifacts</th>
-                <th>Released</th>
-                <th>Discovered</th>
+                <th>Minecraft Version</th>
+                <th>Release Time</th>
             </tr>
             </thead>
             <tbody>
             <#list versions as version>
                 <tr>
-                    <td><a href="/ui/components/${groupId?url}/${artifactId?url}/versions/${version.version()?url}">${version.version()}</a></td>
-                    <td>${version.warningCount()}</td>
-                    <td>${version.artifactCount()}</td>
-                    <td>${version.released()}</td>
-                    <td>${version.discovered()}</td>
+                    <td><a href="/ui/components/${version.groupId?url}/${version.artifactId?url}/versions/${version.version?url}">${version.version}</a></td>
+                    <td>${version.minecraftVersion.version}</td>
+                    <td><#if version.released??>${version.released}<#else>-</#if></td>
                 </tr>
             </#list>
             </tbody>
@@ -37,9 +33,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            jQuery("#componentVersions").DataTable({
+            jQuery("#neoForgeVersions").DataTable({
                 paging: false,
-                order: [[3, 'desc']],
+                order: [[2, 'desc']],
                 fixedHeader: true,
                 columnControl: [
                     {
@@ -55,7 +51,8 @@
                     indicators: false,
                     handler: false
                 }
-            })
+            });
+
         });
     </script>
 </@page.layout>

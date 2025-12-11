@@ -24,6 +24,9 @@ public interface SoftwareComponentVersionDao extends JpaRepository<SoftwareCompo
     @Nullable
     SoftwareComponentVersion findByGAV(String groupId, String artifactId, String version);
 
+    @Query("from NeoForgeVersion")
+    List<NeoForgeVersion> findAllNeoForgeVersions();
+
     /**
      * Get all versions for a specific Maven artifact.
      *
@@ -31,7 +34,7 @@ public interface SoftwareComponentVersionDao extends JpaRepository<SoftwareCompo
      * @param artifactId The Maven artifact ID
      * @return List of all versions for this artifact
      */
-    @Query("select v.version, v.released, v.discovered, v.repository, size(v.warnings), size(v.artifacts) from SoftwareComponentVersion v where v.groupId = :groupId and v.artifactId = :artifactId order by v.released desc")
+    @Query("select v.version, v.released, v.discovered, v.repository, size(v.warnings), size(v.artifacts), v.changelog from SoftwareComponentVersion v where v.groupId = :groupId and v.artifactId = :artifactId order by v.released desc")
     List<Summary> findSummaryByGA(String groupId, String artifactId);
 
     record Summary(String version,
@@ -39,7 +42,8 @@ public interface SoftwareComponentVersionDao extends JpaRepository<SoftwareCompo
                    Instant discovered,
                    String repository,
                    int warningCount,
-                   int artifactCount) {
+                   int artifactCount,
+                   @Nullable SoftwareComponentChangelog changelog) {
     }
 
     /**

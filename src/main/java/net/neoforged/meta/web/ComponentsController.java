@@ -1,7 +1,7 @@
 package net.neoforged.meta.web;
 
 import net.neoforged.meta.config.MetaApiProperties;
-import net.neoforged.meta.db.SoftwareComponentArtifact;
+import net.neoforged.meta.db.NeoForgeVersion;
 import net.neoforged.meta.db.SoftwareComponentVersionDao;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.slf4j.Logger;
@@ -17,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Function;
 
 @Controller
 public class ComponentsController {
@@ -119,6 +118,7 @@ public class ComponentsController {
         model.addAttribute("warnings", List.copyOf(details.getWarnings()));
         model.addAttribute("artifacts", List.copyOf(details.getArtifacts()));
         model.addAttribute("repository", repository);
+        model.addAttribute("neoForgeVersion", details instanceof NeoForgeVersion);
 
         return "component-version-detail";
     }

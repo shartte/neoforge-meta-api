@@ -106,7 +106,7 @@ public class MavenRepositoriesFacade {
     public HttpHeaders headArtifact(String repositoryId, String groupId, String artifactId, String version, @Nullable String classifier, @Nullable String extension) {
         var result = headOptionalArtifact(repositoryId, groupId, artifactId, version, classifier, extension);
         if (result == null) {
-            throw new IllegalStateException("Required artifact is missing.");
+            throw new IllegalStateException("Required artifact is missing: " + getArtifactPath(repositoryId, groupId, artifactId, version, classifier, extension));
         }
         return result;
     }

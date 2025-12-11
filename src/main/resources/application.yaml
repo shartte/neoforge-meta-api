@@ -45,14 +45,27 @@ meta-api:
             - classifier: changelog
               extension: txt
               optional: true
+    - maven-repository-id: releases
+      group-id: net.neoforged
+      artifact-id: forge
+      publication-rules:
+          # No Gradle ".module" metadata was ever published for 1.20.1 versions
+          - artifacts:
+            - extension: pom
+            - classifier: universal
+            - classifier: installer
+            - classifier: userdev
+            - classifier: sources
+            - classifier: changelog
+              extension: txt
+              optional: true
     # - maven-repository-id: releases
     #   group-id: net.neoforged.fancymodloader
     #   artifact-id: loader
 
   maven-repositories:
     - id: releases
-      #url: https://maven.prod.k8s.neoforged.net/releases/
-      url: http://localhost:8088/
+      url: https://maven.prod.k8s.neoforged.net/releases/
       external-url: https://maven.neoforged.net/releases/
 
 scheduled-tasks:
@@ -98,7 +111,7 @@ spring:
     properties:
       hibernate:
         # format_sql: true
-        show_sql: true
+        # show_sql: true
     open-in-view: false
 
 management:

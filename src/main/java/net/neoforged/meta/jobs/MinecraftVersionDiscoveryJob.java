@@ -6,6 +6,7 @@ import net.neoforged.meta.db.MinecraftVersionDao;
 import net.neoforged.meta.db.MinecraftVersionManifest;
 import net.neoforged.meta.db.ReferencedLibrary;
 import net.neoforged.meta.manifests.launcher.LauncherManifest;
+import net.neoforged.meta.maven.NeoForgeVersionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -74,9 +75,8 @@ public class MinecraftVersionDiscoveryJob implements Runnable {
                                 !existingManifest.getSha1().equals(discoveredVersion.sha1());
 
                         if (manifestChanged || existingVersion.isReimport()) {
-                            existingVersion.setReimport(false);
-
                             updateVersion(discoveredVersion, existingVersion);
+                            existingVersion.setReimport(false);
                             versionsChanged.incrementAndGet();
                         }
                         brokenVersions.reportSuccess(discoveredVersion.id());
@@ -142,9 +142,8 @@ public class MinecraftVersionDiscoveryJob implements Runnable {
         manifest.setSourceUrl(discoveredVersion.url().toString());
         manifest.setContent(manifestContent);
 
-        if (contentChanged) {
+        if (contentChanged || version.isReimport()) {
             manifest.setLastModified(Instant.now());
-
             // Parse manifest to extract Java version
             var parsedManifest = net.neoforged.meta.manifests.version.MinecraftVersionManifest.from(manifest.getContent());
             if (parsedManifest.javaVersion() == null) {

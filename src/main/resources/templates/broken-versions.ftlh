@@ -24,11 +24,11 @@
                 <tr>
                     <td>${version.groupId}</td>
                     <td>${version.artifactId}</td>
-                    <td><a href="/ui/broken-versions/version/${version.id?url}">${version.version}</a></td>
+                    <td><a href="/ui/broken-versions/version/${version.groupId?url}/${version.artifactId?url}/${version.version?url}">${version.version}</a></td>
                     <td>${version.created}</td>
                     <td>${version.lastAttempt}</td>
                     <td>${version.attempts}</td>
-                    <td><button>Retry</button></td>
+                    <td><button class="btn btn-secondary">Retry</button></td>
                 </tr>
             </#list>
             </tbody>

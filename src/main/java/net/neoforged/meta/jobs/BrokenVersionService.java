@@ -69,7 +69,7 @@ public class BrokenVersionService {
     }
 
     public BrokenVersions getBrokenVersions(String groupId, String artifactId) {
-        var brokenVersions = dao.getBrokenVersions(groupId, artifactId)
+        var brokenVersions = dao.findSummariesByGA(groupId, artifactId)
                 .stream()
                 .collect(Collectors.toMap(
                         BrokenSoftwareComponentVersionDao.BrokenVersionSummary::version,

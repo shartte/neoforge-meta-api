@@ -15,6 +15,7 @@ import net.neoforged.meta.event.EventService;
 import net.neoforged.meta.extract.ChangelogExtractor;
 import net.neoforged.meta.extract.NeoForgeVersionExtractor;
 import net.neoforged.meta.maven.MavenRepositoriesFacade;
+import net.neoforged.meta.maven.NeoForgeVersionService;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,28 +43,27 @@ public class MavenVersionDiscoveryJob implements Runnable {
     private final List<SoftwareComponentProperties> components;
     private final MavenRepositoriesFacade mavenRepositories;
     private final TransactionTemplate transactionTemplate;
-    private final NeoForgeVersionDao neoForgeVersionDao;
     private final MinecraftVersionDao minecraftVersionDao;
     private final EventService eventService;
     private final BrokenVersionService brokenVersionService;
+    private final NeoForgeVersionService neoForgeVersionService;
 
     public MavenVersionDiscoveryJob(
             SoftwareComponentVersionDao versionDao,
             MetaApiProperties apiProperties,
             MavenRepositoriesFacade mavenRepositories,
             TransactionTemplate transactionTemplate,
-            NeoForgeVersionDao neoForgeVersionDao,
             MinecraftVersionDao minecraftVersionDao,
             EventService eventService,
-            BrokenVersionService brokenVersionService) {
+            BrokenVersionService brokenVersionService, NeoForgeVersionService neoForgeVersionService) {
         this.versionDao = versionDao;
         this.components = apiProperties.getComponents();
         this.mavenRepositories = mavenRepositories;
         this.transactionTemplate = transactionTemplate;
-        this.neoForgeVersionDao = neoForgeVersionDao;
         this.minecraftVersionDao = minecraftVersionDao;
         this.eventService = eventService;
         this.brokenVersionService = brokenVersionService;
+        this.neoForgeVersionService = neoForgeVersionService;
     }
 
     @Override
@@ -121,7 +121,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
         SoftwareComponentVersion versionEntity;
 
         // Post-Process Component Specific Information
-        if ("net.neoforged".equals(component.getGroupId()) && "neoforge".equals(component.getArtifactId())) {
+        if (neoForgeVersionService.isNeoForgeGA(component.getGroupId(), component.getArtifactId())) {
             var neoForgeVersion = new NeoForgeVersion();
             discoverBaseVersion(component, version, versionEntity = neoForgeVersion);
 
@@ -147,7 +147,6 @@ public class MavenVersionDiscoveryJob implements Runnable {
             neoForgeVersion.setLibraries(versionMetadata.libraries());
             neoForgeVersion.setServerArgsUnix(versionMetadata.serverArgsUnix());
             neoForgeVersion.setServerArgsWindows(versionMetadata.serverArgsWindows());
-            neoForgeVersionDao.saveAndFlush(neoForgeVersion);
         } else {
             discoverBaseVersion(component, version, versionEntity = new SoftwareComponentVersion());
         }
