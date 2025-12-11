@@ -23,6 +23,10 @@ public interface BrokenSoftwareComponentVersionDao extends JpaRepository<BrokenS
     @Query("update BrokenSoftwareComponentVersion set retry = false, attempts = attempts + 1 where id = :id")
     void incrementRetryCount(long id);
 
+    @Modifying
+    @Query("update BrokenSoftwareComponentVersion set retry = true")
+    int retryAll();
+
     record BrokenVersionSummary(long id, String version, Instant created, Instant lastAttempt, boolean retry) {
     }
 

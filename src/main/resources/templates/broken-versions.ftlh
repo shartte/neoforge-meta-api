@@ -24,18 +24,25 @@
                 <tr>
                     <td>${version.groupId}</td>
                     <td>${version.artifactId}</td>
-                    <td><a href="/ui/broken-versions/version/${version.groupId?url}/${version.artifactId?url}/${version.version?url}">${version.version}</a></td>
+                    <td>
+                        <a href="/ui/broken-versions/version/${version.groupId?url}/${version.artifactId?url}/${version.version?url}">${version.version}</a>
+                    </td>
                     <td>${version.created}</td>
                     <td>${version.lastAttempt}</td>
                     <td>${version.attempts}</td>
-                    <td><button class="btn btn-secondary">Retry</button></td>
+                    <td>${version.retry?then('Y', 'N')}</td>
                 </tr>
             </#list>
             </tbody>
         </table>
 
-        <p style="margin-top: 2rem;">
+        <div style="margin-top: 2rem;">
+            <form method="POST">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <input type="hidden" name="action" value="retry-all"/>
+                <button class="btn">Retry All</button>
+            </form>
             <a href="/" class="btn btn-secondary">Back to Home</a>
-        </p>
+        </div>
     </section>
 </@page.layout>

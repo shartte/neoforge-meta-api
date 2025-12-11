@@ -31,7 +31,20 @@
             </tr>
             <tr>
                 <th style="width: 200px;">Attempts</th>
-                <td>${version.attempts}</td>
+                <td>
+                    ${version.attempts}
+                </td>
+            </tr>
+            <tr>
+                <th style="width: 200px;">Will Retry</th>
+                <td>
+                    <div>${version.retry?then('Y', 'N')}</div>
+                    <form method="POST">
+                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                        <input type="hidden" name="action" value="retry"/>
+                        <button class="btn">Retry</button>
+                    </form>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -41,7 +54,9 @@
             <tbody>
             <#list errors as error>
                 <tr>
-                    <td>${error.details}</td>
+                    <td>
+                        <pre>${error.details}</pre>
+                    </td>
                 </tr>
             </#list>
             </tbody>
