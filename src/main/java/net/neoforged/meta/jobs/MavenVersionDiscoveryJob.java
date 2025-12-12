@@ -77,6 +77,11 @@ public class MavenVersionDiscoveryJob implements Runnable {
         var artifactId = component.getArtifactId();
         var repository = component.getMavenRepositoryId();
 
+        if (neoForgeVersionService.isNeoForgeGA(groupId, artifactId) && minecraftVersionDao.count() == 0) {
+            logger.error("Skipping discovery of {}:{} since no Minecraft versions are known yet.", groupId, artifactId);
+            return;
+        }
+
         logger.info("Discovering Maven versions for {}:{} in repository {}", groupId, artifactId, repository);
 
         // Get existing versions to avoid duplicates and broken versions to avoid rescanning them
