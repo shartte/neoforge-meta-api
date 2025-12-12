@@ -1,4 +1,4 @@
-package net.neoforged.meta.web;
+package net.neoforged.meta.ui;
 
 import net.neoforged.meta.db.BrokenSoftwareComponentVersionDao;
 import org.springframework.stereotype.Controller;

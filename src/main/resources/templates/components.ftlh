@@ -1,4 +1,4 @@
-<#-- @ftlvariable name="components" type="net.neoforged.meta.web.ComponentModel[]" -->
+<#-- @ftlvariable name="components" type="net.neoforged.meta.ui.ComponentModel[]" -->
 <#import "page.ftlh" as page>
 
 <@page.layout title="Components - NeoForge Meta API">

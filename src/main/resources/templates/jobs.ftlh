@@ -1,4 +1,4 @@
-<#-- @ftlvariable name="jobs" type="net.neoforged.meta.web.JobModel[]" -->
+<#-- @ftlvariable name="jobs" type="net.neoforged.meta.ui.JobModel[]" -->
 <#import "page.ftlh" as page>
 
 <@page.layout title="Jobs - NeoForge Meta API">

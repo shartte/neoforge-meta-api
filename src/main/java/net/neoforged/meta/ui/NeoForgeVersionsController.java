@@ -1,4 +1,4 @@
-package net.neoforged.meta.web;
+package net.neoforged.meta.ui;
 
 import net.neoforged.meta.maven.NeoForgeVersionService;
 import org.springframework.http.HttpStatus;

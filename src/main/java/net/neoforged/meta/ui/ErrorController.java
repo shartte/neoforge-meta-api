@@ -1,4 +1,4 @@
-package net.neoforged.meta.web;
+package net.neoforged.meta.ui;
 
 import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.webmvc.autoconfigure.error.BasicErrorController;
