@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.JwtAudienceValidator;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -118,7 +119,7 @@ public class SecurityConfiguration {
         var githubActionsOidcIssuer = "https://token.actions.githubusercontent.com";
         var jwtDecoder = NimbusJwtDecoder.withJwkSetUri(githubActionsOidcIssuer + "/.well-known/jwks").build();
 
-        var audienceValidator = new JwtClaimValidator<>("aud", "neoforge-meta-api"::equals);
+        var audienceValidator = new JwtAudienceValidator("neoforge-meta-api");
         var repositoryValidator = new JwtClaimValidator<String>("repository",
                 repository -> securityProperties.getAllowedRepositories().isEmpty() ||
                         securityProperties.getAllowedRepositories().contains(repository));
