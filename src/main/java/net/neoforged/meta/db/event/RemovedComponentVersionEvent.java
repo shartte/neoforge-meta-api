@@ -5,5 +5,5 @@ import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("removed_component_version")
-public class RemovedComponentVersionEvent extends ComponentVersionEvent {
+public class RemovedComponentVersionEvent extends SoftwareComponentVersionEvent {
 }

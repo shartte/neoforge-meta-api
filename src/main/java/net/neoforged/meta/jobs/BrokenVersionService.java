@@ -3,6 +3,7 @@ package net.neoforged.meta.jobs;
 import net.neoforged.meta.db.BrokenSoftwareComponentVersion;
 import net.neoforged.meta.db.BrokenSoftwareComponentVersionDao;
 import net.neoforged.meta.db.DiscoveryLogMessage;
+import net.neoforged.meta.db.MinecraftVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class BrokenVersionService {
-    private static final String MINECRAFT_GROUP_ID = "net.minecraft";
-    private static final String MINECRAFT_ARTIFACT_ID = "minecraft";
     private static final Logger logger = LoggerFactory.getLogger(BrokenVersionService.class);
 
     private final BrokenSoftwareComponentVersionDao dao;
@@ -65,7 +64,7 @@ public class BrokenVersionService {
     }
 
     public BrokenVersions getBrokenMinecraftVersions() {
-        return getBrokenVersions(MINECRAFT_GROUP_ID, MINECRAFT_ARTIFACT_ID);
+        return getBrokenVersions(MinecraftVersion.MINECRAFT_GROUP_ID, MinecraftVersion.MINECRAFT_ARTIFACT_ID);
     }
 
     public BrokenVersions getBrokenVersions(String groupId, String artifactId) {

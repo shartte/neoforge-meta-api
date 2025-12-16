@@ -1,3 +1,5 @@
+
+
 meta-api:
   data-directory: ${DATA_DIR:./data}
   minecraft-launcher-meta-url: https://piston-meta.mojang.com/mc/game/version_manifest_v2.json

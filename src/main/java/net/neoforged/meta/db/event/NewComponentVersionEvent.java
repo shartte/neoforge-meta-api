@@ -5,5 +5,5 @@ import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("new_component_version")
-public class NewComponentVersionEvent extends ComponentVersionEvent {
+public class NewComponentVersionEvent extends SoftwareComponentVersionEvent {
 }

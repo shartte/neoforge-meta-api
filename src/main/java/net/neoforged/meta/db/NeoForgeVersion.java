@@ -20,6 +20,14 @@ import java.util.List;
 @Entity
 @Table(name = "neoforge_version")
 public class NeoForgeVersion extends SoftwareComponentVersion {
+    public static final String GROUP_ID = "net.neoforged";
+    public static final String NEOFORGE_ARTIFACT_ID = "neoforge";
+    public static final String FORGE_ARTIFACT_ID = "forge";
+
+    public static boolean isNeoForgeGA(String groupId, String artifactId) {
+        return groupId.equals(GROUP_ID) && (artifactId.equals(NEOFORGE_ARTIFACT_ID) || artifactId.equals(FORGE_ARTIFACT_ID));
+    }
+
     @ManyToOne
     @Fetch(FetchMode.JOIN)
     private MinecraftVersion minecraftVersion;

@@ -77,7 +77,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
         var artifactId = component.getArtifactId();
         var repository = component.getMavenRepositoryId();
 
-        if (neoForgeVersionService.isNeoForgeGA(groupId, artifactId) && minecraftVersionDao.count() == 0) {
+        if (NeoForgeVersion.isNeoForgeGA(groupId, artifactId) && minecraftVersionDao.count() == 0) {
             logger.error("Skipping discovery of {}:{} since no Minecraft versions are known yet.", groupId, artifactId);
             return;
         }
@@ -125,7 +125,7 @@ public class MavenVersionDiscoveryJob implements Runnable {
         SoftwareComponentVersion versionEntity;
 
         // Post-Process Component Specific Information
-        if (neoForgeVersionService.isNeoForgeGA(component.getGroupId(), component.getArtifactId())) {
+        if (NeoForgeVersion.isNeoForgeGA(component.getGroupId(), component.getArtifactId())) {
             var neoForgeVersion = new NeoForgeVersion();
             discoverBaseVersion(component, version, versionEntity = neoForgeVersion);
 

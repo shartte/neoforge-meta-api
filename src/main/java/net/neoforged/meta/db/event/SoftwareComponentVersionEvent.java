@@ -4,12 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
-public abstract class ComponentVersionEvent extends Event {
-    @Column(nullable = false)
+public abstract class SoftwareComponentVersionEvent extends Event {
+    @Column
     private String groupId;
-    @Column(nullable = false)
+    @Column
     private String artifactId;
-    @Column(nullable = false)
+    @Column
     private String version;
 
     public String getGroupId() {

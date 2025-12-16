@@ -25,6 +25,21 @@ import java.util.List;
         }
 )
 public class MinecraftVersion {
+    /**
+     * Virtual Maven group ID used to create {@linkplain net.neoforged.meta.db.event.SoftwareComponentVersionEvent events}
+     * for Minecraft versions.
+     */
+    public static final String MINECRAFT_GROUP_ID = "net.minecraft";
+    /**
+     * Virtual Maven artifact ID used to create {@linkplain net.neoforged.meta.db.event.SoftwareComponentVersionEvent events}
+     * for Minecraft versions.
+     */
+    public static final String MINECRAFT_ARTIFACT_ID = "minecraft";
+
+    public static boolean isMinecraftGA(String groupId, String artifactId) {
+        return MINECRAFT_GROUP_ID.equals(groupId) && MINECRAFT_ARTIFACT_ID.equals(artifactId);
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

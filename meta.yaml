@@ -343,3 +343,157 @@ components:
           type: string
         markdown:
           type: string
+
+    ################################################################################################################
+    # WEBHOOK PAYLOADS
+    ################################################################################################################
+    EventsPayload:
+      description: Webhook payload that contains all occurred events in a list form.
+      type: object
+      additionalProperties: true
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventPayload"
+
+    EventPayload:
+      description: Webhook payload containing a single event.
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          new_software_component_version: "#/components/schemas/NewSoftwareComponentVersionEventPayload"
+          modified_software_component_version: "#/components/schemas/ModifiedSoftwareComponentVersionEventPayload"
+          removed_software_component_version: "#/components/schemas/RemovedSoftwareComponentVersionEventPayload"
+      required:
+        - type
+        - id
+        - created
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+          format: uuid
+        created:
+          type: string
+          format: date-time
+
+    SoftwareComponentVersionEventPayload:
+      type: object
+      required:
+        - group_id
+        - artifact_id
+        - version
+      properties:
+        group_id:
+          type: string
+        artifact_id:
+          type: string
+        version:
+          type: string
+
+    NewSoftwareComponentVersionEventPayload:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SoftwareComponentVersionEventPayload"
+        - $ref: "#/components/schemas/EventPayload"
+
+    ModifiedSoftwareComponentVersionEventPayload:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SoftwareComponentVersionEventPayload"
+        - $ref: "#/components/schemas/EventPayload"
+
+    RemovedSoftwareComponentVersionEventPayload:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SoftwareComponentVersionEventPayload"
+        - $ref: "#/components/schemas/EventPayload"
+
+    SoftwareComponentsChangesPayload:
+      description: Webhook payload that gives a condensed description of changes to multiple software components.
+      type: object
+      additionalProperties: true
+      required:
+        - components
+      properties:
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/SoftwareComponentChangesPayload"
+
+    SoftwareComponentChangesPayload:
+      description: Webhook payload that gives a condensed description of changes to a single software component.
+      type: object
+      additionalProperties: true
+      required:
+        - group_id
+        - artifact_id
+        - new_versions
+        - modified_versions
+        - removed_versions
+      properties:
+        group_id:
+          type: string
+        artifact_id:
+          type: string
+        new_versions:
+          type: array
+          items:
+            type: string
+        modified_versions:
+          type: array
+          items:
+            type: string
+        removed_versions:
+          type: array
+          items:
+            type: string
+
+    NeoForgeVersionChangesPayload:
+      description: Webhook payload that gives a condensed description of new, modified or removed NeoForge versions.
+      type: object
+      additionalProperties: true
+      required:
+        - new_versions
+        - modified_versions
+        - removed_versions
+      properties:
+        new_versions:
+          type: array
+          items:
+            type: string
+        modified_versions:
+          type: array
+          items:
+            type: string
+        removed_versions:
+          type: array
+          items:
+            type: string
+
+    MinecraftVersionChangesPayload:
+      description: Webhook payload that gives a condensed description of new, modified or removed Minecraft versions.
+      type: object
+      additionalProperties: true
+      required:
+        - new_versions
+        - modified_versions
+        - removed_versions
+      properties:
+        new_versions:
+          type: array
+          items:
+            type: string
+        modified_versions:
+          type: array
+          items:
+            type: string
+        removed_versions:
+          type: array
+          items:
+            type: string
