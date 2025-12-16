@@ -4,23 +4,30 @@ import net.neoforged.meta.config.SecurityProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.IpAddressMatcher;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatchers;
+
+import java.util.function.Supplier;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -81,7 +88,11 @@ public class SecurityConfiguration {
 
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/actuator/health/**").permitAll()
+                        // Always allow access to healthchecks for localhost so K8S can perform readiness/liveness checks
+                        .requestMatchers("/actuator/health/**").access(loopbackOnly())
+                        // Other actuator endpoints require admin role
+                        .requestMatchers("/actuator/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(withDefaults())
@@ -101,6 +112,21 @@ public class SecurityConfiguration {
                         .authenticationEntryPoint(new BrowserAwareAuthenticationEntryPoint("/oauth2/authorization/dex"))
                 )
                 .build();
+    }
+
+    /**
+     * Authorization manager that only allows access from loopback interfaces (127.0.0.1, ::1)
+     */
+    private AuthorizationManager<RequestAuthorizationContext> loopbackOnly() {
+        var ipv4Loopback = new IpAddressMatcher("127.0.0.1");
+        var ipv6Loopback = new IpAddressMatcher("::1");
+
+        return (authentication, context) -> {
+            var request = context.getRequest();
+            var remoteAddr = request.getRemoteAddr();
+            boolean isLoopback = ipv4Loopback.matches(remoteAddr) || ipv6Loopback.matches(remoteAddr);
+            return new AuthorizationDecision(isLoopback);
+        };
     }
 
     /**
