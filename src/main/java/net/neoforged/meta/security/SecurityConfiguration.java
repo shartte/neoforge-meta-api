@@ -81,7 +81,7 @@ public class SecurityConfiguration {
 
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/actuator/health/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(withDefaults())
