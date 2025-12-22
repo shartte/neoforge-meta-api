@@ -85,8 +85,8 @@ public class SecurityConfiguration {
                         // Always allow access to healthchecks for localhost so K8S can perform readiness/liveness checks
                         .requestMatchers("/actuator/health/**").permitAll()
                         // Other actuator endpoints require admin role
-                        .requestMatchers("/actuator/**").hasAnyRole("ADMIN")
-                        .requestMatchers("/webjars/**", "/*.css", "/*.js", "/favicon.ico", "/error").permitAll()
+                        .requestMatchers("/actuator/**").hasAnyRole("admin")
+                        .requestMatchers("/v1/openapi.yaml", "/webjars/**", "/*.css", "/*.js", "/favicon.ico", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(withDefaults())

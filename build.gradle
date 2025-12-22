@@ -80,7 +80,7 @@ dependencies {
 // OpenAPI Generator configuration
 openApiGenerate {
 	generatorName = 'spring'
-	inputSpec = layout.projectDirectory.file('src/main/resources/static/openapi.yaml').asFile.toURI().toString()
+	inputSpec = layout.projectDirectory.file('src/main/resources/static/v1/openapi.yaml').asFile.toURI().toString()
 	outputDir = layout.buildDirectory.dir('generated').get().asFile.absolutePath
 	apiPackage = 'net.neoforged.meta.generated.api'
 	modelPackage = 'net.neoforged.meta.generated.model'
