@@ -1,7 +1,6 @@
 package net.neoforged.meta.triggers;
 
 import jakarta.persistence.criteria.Path;
-import net.neoforged.meta.config.trigger.CommonEventReceiverProperties;
 import net.neoforged.meta.db.event.Event;
 import net.neoforged.meta.db.event.EventDao;
 import net.neoforged.meta.db.event.ModifiedComponentVersionEvent;
@@ -13,7 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.PredicateSpecification;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Component
 public class EventDeliveryController {
     private static final Logger LOG = LoggerFactory.getLogger(EventDeliveryController.class);
     private final Map<String, EventReceiver> receivers;
@@ -33,8 +35,8 @@ public class EventDeliveryController {
     private final EventReceiverStateStore stateStore;
     private final EventDao eventDao;
 
-    public EventDeliveryController(List<EventReceiver> receivers, EventReceiverStateStore stateStore, EventDao eventDao) {
-        this.receivers = receivers.stream().collect(Collectors.toMap(EventReceiver::getId, Function.identity()));
+    public EventDeliveryController(EventReceivers receivers, EventReceiverStateStore stateStore, EventDao eventDao) {
+        this.receivers = receivers.receivers().stream().collect(Collectors.toMap(EventReceiver::getId, Function.identity()));
         this.stateStore = stateStore;
         this.eventDao = eventDao;
     }
@@ -63,13 +65,26 @@ public class EventDeliveryController {
                 runningDeliveries.remove(receiver.getId());
             }
 
-            var state = savedStates.computeIfAbsent(receiver.getId(), id -> stateStore.save(id, null));
-            Long lastEventIdSeen = state.getLastEventIdSeen();
+            var state = savedStates.computeIfAbsent(receiver.getId(), stateStore::create);
+
+            // Ignore receivers that are paused
+            if (state.isPaused()) {
+                // Unpause the receiver if its pause time has elapsed
+                if (state.getPausedUntil() != null && state.getPausedUntil().isBefore(Instant.now())) {
+                    LOG.info("Unpausing receiver {} after its pause time ({}) has elapsed", receiver.getId(), state.getPausedUntil());
+                    stateStore.resume(receiver.getId());
+                } else {
+                    LOG.trace("Skipping paused receiver {}", receiver.getId());
+                    continue;
+                }
+            }
+
+            Long lastEventIdSeen = state.getHighestEventIdSeen();
             if (highestEventId != null && (lastEventIdSeen == null || lastEventIdSeen < highestEventId)) {
                 // Schedule a task to update this receiver
-                LOG.debug("Scheduling task to update event receiver {} from event {} to {}", receiver.getId(), state.getLastEventIdSeen(), highestEventId);
+                LOG.debug("Scheduling task to update event receiver {} from event {} to {}", receiver.getId(), state.getHighestEventIdSeen(), highestEventId);
                 var future = CompletableFuture.supplyAsync(() -> updateReceiver(receiver, lastEventIdSeen, highestEventId), getExecutor(receiver))
-                        .whenComplete((actualHighestEventId, throwable) -> afterReceiverUpdated(receiver, actualHighestEventId, throwable));
+                        .whenComplete((result, throwable) -> afterReceiverUpdated(receiver, result, throwable));
                 runningDeliveries.put(receiver.getId(), future);
             }
         }
@@ -97,7 +112,10 @@ public class EventDeliveryController {
         }
     }
 
-    private long updateReceiver(EventReceiver receiver, Long lastSeenEventId, long highestEventId) {
+    record UpdateResult(long highestEventId, long eventsDelivered) {
+    }
+
+    private UpdateResult updateReceiver(EventReceiver receiver, Long lastSeenEventId, long highestEventId) {
         var page = Pageable.unpaged();
 
         if (receiver.getMaxBatchSize() != null) {
@@ -106,13 +124,13 @@ public class EventDeliveryController {
 
         LOG.info("Querying events with ids ({},{}] for event receiver {}.", lastSeenEventId != null ? lastSeenEventId : "", highestEventId, receiver.getId());
         var eventsPage = eventDao.findAll(Specification.where(eventIdRange(lastSeenEventId, highestEventId))
-                .and(eventFilter(receiver.getProperties())), page);
+                .and(receiver.getEventFilter()), page);
 
         var events = eventsPage.getContent();
 
         if (events.isEmpty()) {
             LOG.debug("Found no matching events.");
-            return highestEventId;
+            return new UpdateResult(highestEventId, 0);
         } else if (receiver.getMaxBatchSize() != null && eventsPage.hasNext()) {
             // If we have a maximum batch size that limited the DB query, and the query reached its maximum size,
             // it is not assured that we've actually seen the highest event id overall. That is only guaranteed
@@ -120,13 +138,13 @@ public class EventDeliveryController {
             highestEventId = events.getLast().getId();
         }
 
-        if (receiver.getProperties().isCompactEvents()) {
+        if (receiver.isCompactEvents()) {
             events = compactEvents(events);
         }
 
         LOG.debug("Found {} events.", events.size());
-        receiver.sendEvents(events);
-        return highestEventId;
+        receiver.getDeliveryStrategy().sendEvents(events);
+        return new UpdateResult(highestEventId, events.size());
     }
 
     private static PredicateSpecification<Event> eventIdRange(Long lowerBoundExclusive, long upperBound) {
@@ -137,37 +155,6 @@ public class EventDeliveryController {
             } else {
                 return criteriaBuilder.between(idAttr, lowerBoundExclusive + 1, upperBound);
             }
-        };
-    }
-
-    private static PredicateSpecification<Event> eventFilter(CommonEventReceiverProperties properties) {
-        return (from, cb) -> {
-            var filteredComponents = properties.getComponents();
-            if (!filteredComponents.isEmpty() && !filteredComponents.contains("*:*")) {
-                // Use treat() to downcast Event to NewComponentVersionEvent to access groupId/artifactId
-                // Since we use a single table mapping strategy, and we have to use an Entity here, we just use the new event to access the fields.
-                var componentVersionFrom = cb.treat(from, NewComponentVersionEvent.class);
-                Path<String> groupIdAttr = componentVersionFrom.get("groupId");
-                Path<String> artifactIdAttr = componentVersionFrom.get("artifactId");
-                // Build a disjunction of all the filtered components
-                return cb.or(filteredComponents.stream().map(component -> {
-                    var parts = component.split(":", 2);
-                    var groupId = parts[0];
-                    var artifactId = parts[1];
-                    if (groupId.equals("*")) {
-                        return cb.equal(artifactIdAttr, artifactId);
-                    } else if (artifactId.equals("*")) {
-                        return cb.equal(groupIdAttr, groupId);
-                    } else {
-                        return cb.and(
-                                cb.equal(groupIdAttr, groupId),
-                                cb.equal(artifactIdAttr, artifactId)
-                        );
-                    }
-                }).toList());
-            }
-
-            return cb.and(); // Always true
         };
     }
 
@@ -219,12 +206,15 @@ public class EventDeliveryController {
         return events;
     }
 
-    private void afterReceiverUpdated(EventReceiver receiver, long highestEventId, @Nullable Throwable throwable) {
-        if (throwable == null) {
-            stateStore.save(receiver.getId(), highestEventId);
+    private void afterReceiverUpdated(EventReceiver receiver, @Nullable UpdateResult result, @Nullable Throwable throwable) {
+        if (result != null && throwable == null) {
+            stateStore.recordSuccess(receiver.getId(), result.highestEventId, result.eventsDelivered);
         } else {
+            if (throwable == null) {
+                throwable = new NullPointerException("No result produced, but no error either.");
+            }
             LOG.error("Update of event receiver {} has failed.", receiver.getId(), throwable);
-            // TODO: Save error state
+            stateStore.recordFailure(receiver.getId(), throwable);
         }
     }
 

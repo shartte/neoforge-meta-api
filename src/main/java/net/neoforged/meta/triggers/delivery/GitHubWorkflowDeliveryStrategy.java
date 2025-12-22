@@ -1,7 +1,8 @@
-package net.neoforged.meta.triggers;
+package net.neoforged.meta.triggers.delivery;
 
 import net.neoforged.meta.config.trigger.GitHubWorkflowTriggerProperties;
 import net.neoforged.meta.db.event.Event;
+import net.neoforged.meta.triggers.PayloadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -11,14 +12,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class GitHubWorkflowEventReceiver extends EventReceiver {
-    private static final Logger LOG = LoggerFactory.getLogger(GitHubWorkflowEventReceiver.class);
+/**
+ * Performs delivery of an event batch by triggering a GitHub workflow and optionally passing the
+ * events as an input to the workflow.
+ */
+public class GitHubWorkflowDeliveryStrategy implements EventDeliveryStrategy {
+    private static final Logger LOG = LoggerFactory.getLogger(GitHubWorkflowDeliveryStrategy.class);
     private final GitHubWorkflowTriggerProperties properties;
     private final RestClient restClient;
     private final PayloadFactory payloadFactory;
 
-    public GitHubWorkflowEventReceiver(String id, GitHubWorkflowTriggerProperties properties, PayloadFactory payloadFactory) {
-        super(id, properties);
+    public GitHubWorkflowDeliveryStrategy(GitHubWorkflowTriggerProperties properties, PayloadFactory payloadFactory) {
         this.payloadFactory = payloadFactory;
         this.properties = properties;
         this.restClient = RestClient.builder()
@@ -67,6 +71,6 @@ public class GitHubWorkflowEventReceiver extends EventReceiver {
     @Override
     public Integer getMaxBatchSize() {
         // GitHub batch size is limited by the maximum size of the inputs payload (~65kb).
-        return properties.getMaxBatchSize() != null ? Math.min(100, properties.getMaxBatchSize()) : 100;
+        return 100;
     }
 }

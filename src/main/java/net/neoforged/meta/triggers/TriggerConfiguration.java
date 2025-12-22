@@ -1,7 +1,6 @@
 package net.neoforged.meta.triggers;
 
 import net.neoforged.meta.config.trigger.TriggersProperties;
-import net.neoforged.meta.db.event.EventDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -16,10 +15,7 @@ public class TriggerConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(TriggerConfiguration.class);
 
     @Bean
-    EventDeliveryController eventDeliveryController(TriggersProperties properties,
-                                                    EventReceiverStateStore stateStore,
-                                                    EventDao eventDao,
-                                                    EventReceiverFactory factory) {
+    protected EventReceivers eventReceivers(TriggersProperties properties, EventReceiverFactory factory) {
         LOG.info("{} event receivers are configured", properties.getGithubWorkflows().size());
 
         var receivers = new ArrayList<EventReceiver>();
@@ -27,17 +23,11 @@ public class TriggerConfiguration {
             receivers.add(factory.createGitHubWorkflow(entry.getKey(), entry.getValue()));
         }
 
-        return new EventDeliveryController(receivers, stateStore, eventDao);
+        return new EventReceivers(receivers);
     }
 
     @Bean
     ControllerLoop triggerControllerLoop(TriggersProperties properties, EventDeliveryController eventDeliveryController) {
         return new ControllerLoop(properties.getCheckWorkInterval(), eventDeliveryController::runIteration);
     }
-
-    @Bean
-    public TriggerService triggerService(ControllerLoop triggerControllerLoop) {
-        return new TriggerService(triggerControllerLoop);
-    }
-
 }

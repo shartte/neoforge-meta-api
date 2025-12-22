@@ -59,6 +59,13 @@ dependencies {
 	implementation 'org.commonmark:commonmark:0.27.0'
     implementation 'org.apache.maven:maven-artifact:4.0.0-rc-5'
 
+	// https://mvnrepository.com/artifact/org.webjars/font-awesome
+	runtimeOnly 'org.webjars:font-awesome:7.1.0'
+	runtimeOnly 'org.webjars.npm:jquery:3.7.1'
+	runtimeOnly 'org.webjars.npm:datatables.net-dt:2.3.5'
+	runtimeOnly 'org.webjars.npm:datatables.net-columncontrol-dt:1.1.1'
+	runtimeOnly 'org.webjars.npm:datatables.net-fixedheader-dt:4.0.5'
+
 	implementation 'org.flywaydb:flyway-core'
 
 	runtimeOnly 'org.xerial:sqlite-jdbc:3.47.1.0'
@@ -73,7 +80,7 @@ dependencies {
 // OpenAPI Generator configuration
 openApiGenerate {
 	generatorName = 'spring'
-	inputSpec = layout.projectDirectory.file('meta.yaml').asFile.toURI().toString()
+	inputSpec = layout.projectDirectory.file('src/main/resources/static/openapi.yaml').asFile.toURI().toString()
 	outputDir = layout.buildDirectory.dir('generated').get().asFile.absolutePath
 	apiPackage = 'net.neoforged.meta.generated.api'
 	modelPackage = 'net.neoforged.meta.generated.model'

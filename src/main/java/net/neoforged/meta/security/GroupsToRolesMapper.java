@@ -4,6 +4,8 @@ import net.neoforged.meta.config.SecurityProperties;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +27,7 @@ public class GroupsToRolesMapper implements GrantedAuthoritiesMapper {
 
     @Override
     public Collection<? extends GrantedAuthority> mapAuthorities(Collection<? extends GrantedAuthority> authorities) {
+        boolean matchedAnyGroup = false;
         Set<GrantedAuthority> result = new HashSet<>(authorities);
         for (var authority : authorities) {
             if (authority instanceof OAuth2UserAuthority oAuthAuthority) {
@@ -32,14 +35,24 @@ public class GroupsToRolesMapper implements GrantedAuthoritiesMapper {
                     for (Object group : groupsList) {
                         if (securityProperties.getUserGroups().contains(group.toString())) {
                             result.add(new SimpleGrantedAuthority("ROLE_user"));
+                            matchedAnyGroup = true;
                         }
                         if (securityProperties.getAdminGroups().contains(group.toString())) {
                             result.add(new SimpleGrantedAuthority("ROLE_admin"));
+                            matchedAnyGroup = true;
                         }
                     }
                 }
             }
         }
+
+        if (!matchedAnyGroup) {
+            OAuth2Error invalidIdTokenError = new OAuth2Error("no-known-group",
+                    "Token was valid, but user is not in any known group.",
+                    null);
+            throw new OAuth2AuthenticationException(invalidIdTokenError, invalidIdTokenError.toString());
+        }
+
         return result;
     }
 }

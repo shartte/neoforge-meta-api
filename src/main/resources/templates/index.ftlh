@@ -16,6 +16,7 @@
             <li><a href="/ui/components">Components</a></li>
             <li><a href="/ui/broken-versions">Broken Versions</a></li>
             <li><a href="/ui/jobs">Jobs</a></li>
+            <li><a href="/ui/event-receivers">Event Receivers</a></li>
         </ul>
     </section>
 </@page.layout>

@@ -86,12 +86,13 @@ public class SecurityConfiguration {
                         .requestMatchers("/actuator/health/**").permitAll()
                         // Other actuator endpoints require admin role
                         .requestMatchers("/actuator/**").hasAnyRole("ADMIN")
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/webjars/**", "/*.css", "/*.js", "/favicon.ico", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(withDefaults())
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/")
+                        .logoutUrl("/ui/logout")
+                        .logoutSuccessUrl("/ui/logout/success")
                         .permitAll()
                 )
                 .csrf(csrf -> csrf
